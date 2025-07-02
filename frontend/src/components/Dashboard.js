@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
+  const { makeRequest, isAdmin, user } = useAuth();
   const [stats, setStats] = useState({
     agendamentosHoje: 0,
     lembradosHoje: 0,
@@ -29,11 +30,17 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await axios.get('/api/dashboard');
-      setStats(response.data);
-      setLoading(false);
+      const response = await makeRequest('/dashboard');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setStats(data);
+      } else {
+        console.error('Erro ao carregar dashboard:', data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -41,12 +48,12 @@ const Dashboard = () => {
   const fetchPipelineStats = async () => {
     try {
       // Buscar estatísticas de pacientes por status
-      const pacientesResponse = await axios.get('/api/pacientes');
-      const pacientes = pacientesResponse.data;
+      const pacientesResponse = await makeRequest('/pacientes');
+      const pacientes = await pacientesResponse.json();
 
       // Buscar estatísticas de agendamentos por status
-      const agendamentosResponse = await axios.get('/api/agendamentos');
-      const agendamentos = agendamentosResponse.data;
+      const agendamentosResponse = await makeRequest('/agendamentos');
+      const agendamentos = await agendamentosResponse.json();
 
       // Contar por status
       const pipelineData = {
@@ -79,283 +86,652 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div>
-        <div className="page-header">
-          <h1 className="page-title">📊 Dashboard</h1>
-          <p className="page-subtitle">Carregando dados...</p>
-        </div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '60vh',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <div style={{ 
+          width: '50px', 
+          height: '50px', 
+          border: '4px solid #f3f4f6', 
+          borderTop: '4px solid #3b82f6', 
+          borderRadius: '50%', 
+          animation: 'spin 1s linear infinite' 
+        }}></div>
+        <p style={{ color: '#6b7280', fontSize: '16px' }}>Carregando dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">📊 Dashboard</h1>
-        <p className="page-subtitle">Visão geral da sua operação - {hoje}</p>
-      </div>
-
-      {/* Pipeline de Vendas */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">🎯 Pipeline de Vendas</h2>
-          <div style={{ fontSize: '1.2rem', fontWeight: '600', color: '#10b981' }}>
-            Taxa de Conversão: {taxaConversao}%
-          </div>
-        </div>
-        
-        <div className="stats-grid">
-          <div className="stat-card" style={{ borderLeftColor: '#fbbf24' }}>
-            <div className="stat-number" style={{ color: '#fbbf24' }}>{pipelineStats.leads}</div>
-            <div className="stat-label">🔍 Leads</div>
-          </div>
-          <div className="stat-card" style={{ borderLeftColor: '#60a5fa' }}>
-            <div className="stat-number" style={{ color: '#60a5fa' }}>{pipelineStats.agendados}</div>
-            <div className="stat-label">📅 Agendados</div>
-          </div>
-          <div className="stat-card" style={{ borderLeftColor: '#34d399' }}>
-            <div className="stat-number" style={{ color: '#34d399' }}>{pipelineStats.compareceram}</div>
-            <div className="stat-label">🎯 Compareceram</div>
-          </div>
-          <div className="stat-card" style={{ borderLeftColor: '#10b981' }}>
-            <div className="stat-number" style={{ color: '#10b981' }}>{pipelineStats.fechados}</div>
-            <div className="stat-label">💰 Fechados</div>
-          </div>
-          <div className="stat-card" style={{ borderLeftColor: '#ef4444' }}>
-            <div className="stat-number" style={{ color: '#ef4444' }}>{pipelineStats.naoFecharam}</div>
-            <div className="stat-label">❌ Não Fecharam</div>
-          </div>
-          <div className="stat-card" style={{ borderLeftColor: '#f87171' }}>
-            <div className="stat-number" style={{ color: '#f87171' }}>{pipelineStats.naoCompareceram}</div>
-            <div className="stat-label">🚫 Não Compareceram</div>
-          </div>
+    <div style={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '20px 0'
+    }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 20px' }}>
+        {/* Header Moderno */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '20px',
+          padding: '30px',
+          marginBottom: '30px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          color: 'white',
+          textAlign: 'center'
+        }}>
+          <h1 style={{ 
+            fontSize: '32px', 
+            fontWeight: '700', 
+            margin: '0 0 10px 0',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            {isAdmin ? '📊 Dashboard Executivo' : '👨‍💼 Meu Dashboard'}
+          </h1>
+          <p style={{ 
+            fontSize: '16px', 
+            opacity: '0.9', 
+            margin: '0',
+            fontWeight: '500'
+          }}>
+            {isAdmin 
+              ? 'Visão estratégica da operação' 
+              : `Bem-vindo, ${user?.nome}`
+            } • {hoje}
+          </p>
         </div>
 
-
-      </div>
-
-      {/* Estatísticas Diárias */}
-      <div className="stats-grid">
-        <div className="stat-card primary">
-          <div className="stat-number">{stats.agendamentosHoje}</div>
-          <div className="stat-label">Agendamentos Hoje</div>
-        </div>
-        <div className="stat-card success">
-          <div className="stat-number">{stats.lembradosHoje}</div>
-          <div className="stat-label">Lembrados Hoje</div>
-        </div>
-        <div className="stat-card info">
-          <div className="stat-number">{stats.totalPacientes}</div>
-          <div className="stat-label">Total de Pacientes</div>
-        </div>
-        <div className="stat-card warning">
-          <div className="stat-number">
-            {stats.agendamentosHoje > 0 
-              ? Math.round((stats.lembradosHoje / stats.agendamentosHoje) * 100)
-              : 0}%
-          </div>
-          <div className="stat-label">Taxa de Lembrados Hoje</div>
-        </div>
-      </div>
-
-      {/* Estatísticas de Fechamentos */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">💰 Fechamentos</h2>
-          <div style={{ fontSize: '1.2rem', fontWeight: '600', color: '#10b981' }}>
-            Ticket Médio: {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(stats.ticketMedio)}
-          </div>
-        </div>
-        
-        <div className="stats-grid">
-          <div className="stat-card" style={{ borderLeftColor: '#10b981' }}>
-            <div className="stat-number" style={{ color: '#10b981' }}>{stats.fechamentosHoje}</div>
-            <div className="stat-label">💰 Fechamentos Hoje</div>
-          </div>
-          <div className="stat-card" style={{ borderLeftColor: '#059669' }}>
-            <div className="stat-number" style={{ color: '#059669' }}>{stats.fechamentosMes}</div>
-            <div className="stat-label">📊 Fechamentos no Mês</div>
-          </div>
-          <div className="stat-card" style={{ borderLeftColor: '#047857' }}>
-            <div className="stat-number" style={{ color: '#047857' }}>
+        {/* Métricas Principais - Grid Responsivo */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '20px',
+          marginBottom: '30px'
+        }}>
+          {/* Card Faturamento */}
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '25px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '4px',
+              background: 'linear-gradient(90deg, #10b981, #059669)'
+            }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+              <div style={{
+                width: '50px',
+                height: '50px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '15px'
+              }}>
+                <span style={{ fontSize: '20px' }}>💰</span>
+              </div>
+              <div>
+                <h3 style={{ margin: '0', fontSize: '18px', color: '#1f2937', fontWeight: '600' }}>
+                  Faturamento
+                </h3>
+                <p style={{ margin: '0', fontSize: '14px', color: '#6b7280' }}>
+                  Mês atual
+                </p>
+              </div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: '700', color: '#10b981', marginBottom: '8px' }}>
               {new Intl.NumberFormat('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 maximumFractionDigits: 0
               }).format(stats.valorTotalMes)}
             </div>
-            <div className="stat-label">💸 Faturamento do Mês</div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              {stats.fechamentosMes} fechamentos • Ticket médio: {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(stats.ticketMedio)}
+            </div>
           </div>
-          <div className="stat-card" style={{ borderLeftColor: '#065f46' }}>
-            <div className="stat-number" style={{ color: '#065f46' }}>{stats.totalFechamentos}</div>
-            <div className="stat-label">🎯 Total de Fechamentos</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Cards dos Consultores */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">🩺 Acompanhamento por Consultor</h2>
-        </div>
-        
-        {stats.estatisticasConsultores.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#718096', padding: '2rem' }}>
-            Nenhum consultor cadastrado ainda.
-          </p>
-        ) : (
-          <div className="grid grid-3">
-            {stats.estatisticasConsultores.map(consultor => (
-              <div key={consultor.id} className="card" style={{ margin: 0 }}>
-                <h3 style={{ 
-                  fontSize: '1.1rem', 
-                  fontWeight: '600', 
-                  marginBottom: '1rem',
-                  color: '#2d3748',
-                  borderBottom: '2px solid #667eea',
-                  paddingBottom: '0.5rem'
-                }}>
-                  {consultor.nome}
+          {/* Card Agendamentos */}
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '25px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '4px',
+              background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)'
+            }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+              <div style={{
+                width: '50px',
+                height: '50px',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '15px'
+              }}>
+                <span style={{ fontSize: '20px' }}>📅</span>
+              </div>
+              <div>
+                <h3 style={{ margin: '0', fontSize: '18px', color: '#1f2937', fontWeight: '600' }}>
+                  Agendamentos
                 </h3>
-                
-                <div style={{ display: 'grid', gap: '0.75rem' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    padding: '0.5rem',
-                    background: '#f7fafc',
-                    borderRadius: '6px'
+                <p style={{ margin: '0', fontSize: '14px', color: '#6b7280' }}>
+                  Hoje
+                </p>
+              </div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: '700', color: '#3b82f6', marginBottom: '8px' }}>
+              {stats.agendamentosHoje}
+            </div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              {stats.lembradosHoje} lembrados • Taxa: {stats.agendamentosHoje > 0 
+                ? Math.round((stats.lembradosHoje / stats.agendamentosHoje) * 100)
+                : 0}%
+            </div>
+          </div>
+
+          {/* Card Pipeline */}
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '25px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '4px',
+              background: 'linear-gradient(90deg, #8b5cf6, #7c3aed)'
+            }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+              <div style={{
+                width: '50px',
+                height: '50px',
+                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '15px'
+              }}>
+                <span style={{ fontSize: '20px' }}>🎯</span>
+              </div>
+              <div>
+                <h3 style={{ margin: '0', fontSize: '18px', color: '#1f2937', fontWeight: '600' }}>
+                  Conversão
+                </h3>
+                <p style={{ margin: '0', fontSize: '14px', color: '#6b7280' }}>
+                  Taxa geral
+                </p>
+              </div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: '700', color: '#8b5cf6', marginBottom: '8px' }}>
+              {taxaConversao}%
+            </div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              {pipelineStats.fechados} fechados de {pipelineStats.leads} leads
+            </div>
+          </div>
+        </div>
+
+        {/* Pipeline de Vendas - Layout Moderno */}
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '30px',
+          marginBottom: '30px',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '25px'
+          }}>
+            <h2 style={{
+              fontSize: '22px',
+              fontWeight: '600',
+              color: '#1f2937',
+              margin: '0'
+            }}>
+              🎯 Pipeline de Vendas
+            </h2>
+            <div style={{
+              background: '#f0fdf4',
+              color: '#059669',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              border: '1px solid #bbf7d0'
+            }}>
+              Conversão: {taxaConversao}%
+            </div>
+          </div>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '15px'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              padding: '20px',
+              background: '#fef3c7',
+              borderRadius: '12px',
+              border: '1px solid #fbbf24'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#d97706', marginBottom: '5px' }}>
+                {pipelineStats.leads}
+              </div>
+              <div style={{ fontSize: '13px', color: '#92400e', fontWeight: '500' }}>🔍 Leads</div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '20px',
+              background: '#dbeafe',
+              borderRadius: '12px',
+              border: '1px solid #60a5fa'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#2563eb', marginBottom: '5px' }}>
+                {pipelineStats.agendados}
+              </div>
+              <div style={{ fontSize: '13px', color: '#1d4ed8', fontWeight: '500' }}>📅 Agendados</div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '20px',
+              background: '#d1fae5',
+              borderRadius: '12px',
+              border: '1px solid #34d399'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669', marginBottom: '5px' }}>
+                {pipelineStats.compareceram}
+              </div>
+              <div style={{ fontSize: '13px', color: '#047857', fontWeight: '500' }}>🎯 Compareceram</div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '20px',
+              background: '#ecfdf5',
+              borderRadius: '12px',
+              border: '1px solid #10b981'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981', marginBottom: '5px' }}>
+                {pipelineStats.fechados}
+              </div>
+              <div style={{ fontSize: '13px', color: '#059669', fontWeight: '500' }}>💰 Fechados</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Todos os Consultores com Agendamentos */}
+        {stats.estatisticasConsultores.length > 0 && (
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '30px',
+            marginBottom: '30px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '25px'
+            }}>
+              <h2 style={{
+                fontSize: '22px',
+                fontWeight: '600',
+                color: '#1f2937',
+                margin: '0'
+              }}>
+                👨‍💼 Consultores e Agendamentos
+              </h2>
+              <div style={{
+                background: '#eff6ff',
+                color: '#2563eb',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                border: '1px solid #bfdbfe'
+              }}>
+                Total: {stats.estatisticasConsultores.length} consultores
+              </div>
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '20px'
+            }}>
+              {stats.estatisticasConsultores
+                .sort((a, b) => b.total_agendamentos - a.total_agendamentos) // Ordenar por quantidade de agendamentos
+                .map(consultor => (
+                <div key={consultor.id} style={{
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  border: '1px solid #cbd5e1',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  {/* Indicador visual baseado na quantidade de agendamentos */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    background: consultor.total_agendamentos > 20 
+                      ? 'linear-gradient(90deg, #10b981, #059669)' 
+                      : consultor.total_agendamentos > 10 
+                      ? 'linear-gradient(90deg, #3b82f6, #1d4ed8)'
+                      : 'linear-gradient(90deg, #f59e0b, #d97706)'
+                  }}></div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginBottom: '15px'
                   }}>
-                    <span>Total Agendamentos:</span>
-                    <strong style={{ color: '#667eea' }}>{consultor.total_agendamentos}</strong>
+                    <div style={{
+                      width: '45px',
+                      height: '45px',
+                      background: consultor.total_agendamentos > 20 
+                        ? 'linear-gradient(135deg, #10b981, #059669)' 
+                        : consultor.total_agendamentos > 10 
+                        ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                        : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: '12px',
+                      color: 'white',
+                      fontWeight: '700',
+                      fontSize: '18px'
+                    }}>
+                      {consultor.nome.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        margin: '0',
+                        lineHeight: '1.2'
+                      }}>
+                        {consultor.nome}
+                      </h3>
+                      <p style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        margin: '0',
+                        fontWeight: '500'
+                      }}>
+                        {consultor.total_agendamentos > 20 ? '🏆 Top Performer' : 
+                         consultor.total_agendamentos > 10 ? '⭐ Ativo' : '🔄 Iniciante'}
+                      </p>
+                    </div>
                   </div>
                   
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    padding: '0.5rem',
-                    background: '#f0fff4',
-                    borderRadius: '6px'
-                  }}>
-                    <span>Total Lembrados:</span>
-                    <strong style={{ color: '#4CAF50' }}>{consultor.total_lembrados}</strong>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    padding: '0.5rem',
-                    background: '#fffbf0',
-                    borderRadius: '6px'
-                  }}>
-                    <span>Agendamentos Hoje:</span>
-                    <strong style={{ color: '#ff9800' }}>{consultor.agendamentos_hoje}</strong>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    padding: '0.5rem',
-                    background: '#f0f9ff',
-                    borderRadius: '6px'
-                  }}>
-                    <span>Taxa de Conversão:</span>
-                    <strong style={{ color: '#2196f3' }}>
-                      {consultor.total_agendamentos > 0 
-                        ? Math.round((consultor.total_lembrados / consultor.total_agendamentos) * 100)
-                        : 0}%
-                    </strong>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    padding: '0.5rem',
-                    background: '#f0fdf4',
-                    borderRadius: '6px'
-                  }}>
-                    <span>Fechamentos no Mês:</span>
-                    <strong style={{ color: '#10b981' }}>{consultor.fechamentos_mes || 0}</strong>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    padding: '0.5rem',
-                    background: '#ecfdf5',
-                    borderRadius: '6px'
-                  }}>
-                    <span>Valor Total Mês:</span>
-                    <strong style={{ color: '#059669' }}>
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(consultor.valor_total_mes || 0)}
-                    </strong>
+                  {/* Grid de métricas */}
+                  <div style={{ display: 'grid', gap: '8px' }}>
+                    {/* Agendamentos Totais - Destaque */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 15px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                      border: '1px solid #e2e8f0'
+                    }}>
+                      <span style={{ fontWeight: '600', color: '#374151' }}>📅 Total de Agendamentos:</span>
+                      <div style={{
+                        background: consultor.total_agendamentos > 20 
+                          ? '#dcfce7' : consultor.total_agendamentos > 10 
+                          ? '#dbeafe' : '#fef3c7',
+                        color: consultor.total_agendamentos > 20 
+                          ? '#166534' : consultor.total_agendamentos > 10 
+                          ? '#1e40af' : '#92400e',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontWeight: '700',
+                        fontSize: '15px'
+                      }}>
+                        {consultor.total_agendamentos}
+                      </div>
+                    </div>
+                    
+                    {/* Agendamentos Hoje */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '10px 15px',
+                      background: 'white',
+                      borderRadius: '6px',
+                      fontSize: '13px'
+                    }}>
+                      <span>🔥 Hoje:</span>
+                      <strong style={{ color: '#3b82f6' }}>{consultor.agendamentos_hoje || 0}</strong>
+                    </div>
+                    
+                    {/* Taxa de Lembrados */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '10px 15px',
+                      background: 'white',
+                      borderRadius: '6px',
+                      fontSize: '13px'
+                    }}>
+                      <span>💬 Taxa Lembrados:</span>
+                      <strong style={{ color: '#059669' }}>
+                        {consultor.total_agendamentos > 0 
+                          ? Math.round((consultor.total_lembrados / consultor.total_agendamentos) * 100)
+                          : 0}%
+                      </strong>
+                    </div>
+                    
+                    {/* Fechamentos se for admin */}
+                    {isAdmin && (
+                      <>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '10px 15px',
+                          background: 'white',
+                          borderRadius: '6px',
+                          fontSize: '13px'
+                        }}>
+                          <span>💰 Fechamentos/ano:</span>
+                          <strong style={{ color: '#10b981' }}>{consultor.fechamentos_mes || 0}</strong>
+                        </div>
+                        
+                        {/* Valor Total dos Fechamentos */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '10px 15px',
+                          background: 'white',
+                          borderRadius: '6px',
+                          fontSize: '13px'
+                        }}>
+                          <span>💵 Faturamento/ano:</span>
+                          <strong style={{ color: '#059669' }}>
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                              maximumFractionDigits: 0
+                            }).format(consultor.valor_total_mes || 0)}
+                          </strong>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Resumo de Ações Rápidas */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">⚡ Ações Rápidas</h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <button 
-            className="btn btn-primary"
-            onClick={() => window.location.href = '/pacientes'}
-            style={{ padding: '1.5rem', flexDirection: 'column', gap: '0.5rem' }}
-          >
-            <span style={{ fontSize: '2rem' }}>👥</span>
-            Novo Paciente
-          </button>
-          <button 
-            className="btn btn-success"
-            onClick={() => window.location.href = '/agendamentos'}
-            style={{ padding: '1.5rem', flexDirection: 'column', gap: '0.5rem' }}
-          >
-            <span style={{ fontSize: '2rem' }}>📅</span>
-            Novo Agendamento
-          </button>
-          <button 
-            className="btn"
-            onClick={() => window.location.href = '/fechamentos'}
-            style={{ 
-              padding: '1.5rem', 
-              flexDirection: 'column', 
-              gap: '0.5rem',
-              background: '#10b981',
-              color: 'white',
-              border: 'none'
-            }}
-          >
-            <span style={{ fontSize: '2rem' }}>💰</span>
-            Novo Fechamento
-          </button>
-          <button 
-            className="btn btn-warning"
-            onClick={() => window.location.href = '/consultores'}
-            style={{ padding: '1.5rem', flexDirection: 'column', gap: '0.5rem' }}
-          >
-            <span style={{ fontSize: '2rem' }}>🩺</span>
-            Novo Consultor
-          </button>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => window.location.href = '/clinicas'}
-            style={{ padding: '1.5rem', flexDirection: 'column', gap: '0.5rem' }}
-          >
-            <span style={{ fontSize: '2rem' }}>🏥</span>
-            Nova Clínica
-          </button>
+        {/* Ações Rápidas - Design Moderno */}
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '30px',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+        }}>
+          <h2 style={{
+            fontSize: '22px',
+            fontWeight: '600',
+            color: '#1f2937',
+            marginBottom: '25px',
+            textAlign: 'center'
+          }}>
+            ⚡ Ações Rápidas
+          </h2>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '20px'
+          }}>
+            <button
+              onClick={() => window.location.href = '/fechamentos'}
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '20px',
+                cursor: 'pointer',
+                textAlign: 'center',
+                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+                transition: 'all 0.3s ease',
+                position: 'relative'
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>💰</div>
+              <div style={{ fontSize: '16px', fontWeight: '600' }}>Novo Fechamento</div>
+              <div style={{ fontSize: '12px', opacity: '0.9' }}>Registrar venda</div>
+              {stats.fechamentosHoje > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  background: '#fbbf24',
+                  color: '#92400e',
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  padding: '4px 8px',
+                  borderRadius: '12px'
+                }}>
+                  {stats.fechamentosHoje} hoje
+                </div>
+              )}
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/agendamentos'}
+              style={{
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '20px',
+                cursor: 'pointer',
+                textAlign: 'center',
+                boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📅</div>
+              <div style={{ fontSize: '16px', fontWeight: '600' }}>Novo Agendamento</div>
+              <div style={{ fontSize: '12px', opacity: '0.9' }}>Agendar consulta</div>
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/pacientes'}
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '20px',
+                cursor: 'pointer',
+                textAlign: 'center',
+                boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>👤</div>
+              <div style={{ fontSize: '16px', fontWeight: '600' }}>Novo Paciente</div>
+              <div style={{ fontSize: '12px', opacity: '0.9' }}>Cadastrar lead</div>
+            </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => window.location.href = '/consultores'}
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>👨‍💼</div>
+                <div style={{ fontSize: '16px', fontWeight: '600' }}>Novo Consultor</div>
+                <div style={{ fontSize: '12px', opacity: '0.9' }}>Gerenciar equipe</div>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

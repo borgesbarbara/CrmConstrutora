@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const Agendamentos = () => {
+  const { makeRequest } = useAuth();
   const [agendamentos, setAgendamentos] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   const [consultores, setConsultores] = useState([]);
@@ -50,19 +51,33 @@ const Agendamentos = () => {
 
   const fetchAgendamentos = async () => {
     try {
-      const response = await axios.get('/api/agendamentos');
-      setAgendamentos(response.data);
-      setLoading(false);
+      const response = await makeRequest('/agendamentos');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setAgendamentos(data);
+      } else {
+        console.error('Erro ao carregar agendamentos:', data.error);
+        setMessage('Erro ao carregar agendamentos: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
+      setMessage('Erro ao conectar com o servidor');
+    } finally {
       setLoading(false);
     }
   };
 
   const fetchPacientes = async () => {
     try {
-      const response = await axios.get('/api/pacientes');
-      setPacientes(response.data);
+      const response = await makeRequest('/pacientes');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPacientes(data);
+      } else {
+        console.error('Erro ao carregar pacientes:', data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar pacientes:', error);
     }
@@ -70,8 +85,14 @@ const Agendamentos = () => {
 
   const fetchConsultores = async () => {
     try {
-      const response = await axios.get('/api/consultores');
-      setConsultores(response.data);
+      const response = await makeRequest('/consultores');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setConsultores(data);
+      } else {
+        console.error('Erro ao carregar consultores:', data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
     }
@@ -79,8 +100,14 @@ const Agendamentos = () => {
 
   const fetchClinicas = async () => {
     try {
-      const response = await axios.get('/api/clinicas');
-      setClinicas(response.data);
+      const response = await makeRequest('/clinicas');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setClinicas(data);
+      } else {
+        console.error('Erro ao carregar clínicas:', data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar clínicas:', error);
     }
@@ -89,28 +116,39 @@ const Agendamentos = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let response;
       if (editingAgendamento) {
-        await axios.put(`/api/agendamentos/${editingAgendamento.id}`, formData);
-        setMessage('Agendamento atualizado com sucesso!');
+        response = await makeRequest(`/agendamentos/${editingAgendamento.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
       } else {
-        await axios.post('/api/agendamentos', formData);
-        setMessage('Agendamento criado com sucesso!');
+        response = await makeRequest('/agendamentos', {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
       }
+
+      const data = await response.json();
       
-      setShowModal(false);
-      setEditingAgendamento(null);
-      setFormData({
-        paciente_id: '',
-        consultor_id: '',
-        clinica_id: '',
-        data_agendamento: '',
-        horario: '',
-        status: 'agendado',
-        observacoes: ''
-      });
-      fetchAgendamentos();
-      
-      setTimeout(() => setMessage(''), 3000);
+      if (response.ok) {
+        setMessage(editingAgendamento ? 'Agendamento atualizado com sucesso!' : 'Agendamento criado com sucesso!');
+        setShowModal(false);
+        setEditingAgendamento(null);
+        setFormData({
+          paciente_id: '',
+          consultor_id: '',
+          clinica_id: '',
+          data_agendamento: '',
+          horario: '',
+          status: 'agendado',
+          observacoes: ''
+        });
+        fetchAgendamentos();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erro ao salvar agendamento: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao salvar agendamento:', error);
       setMessage('Erro ao salvar agendamento');
@@ -140,10 +178,20 @@ const Agendamentos = () => {
 
   const updateStatus = async (agendamentoId, newStatus) => {
     try {
-      await axios.put(`/api/agendamentos/${agendamentoId}/status`, { status: newStatus });
-      setMessage('Status atualizado com sucesso!');
-      fetchAgendamentos();
-      setTimeout(() => setMessage(''), 3000);
+      const response = await makeRequest(`/agendamentos/${agendamentoId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage('Status atualizado com sucesso!');
+        fetchAgendamentos();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erro ao atualizar status: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       setMessage('Erro ao atualizar status');
@@ -156,10 +204,19 @@ const Agendamentos = () => {
 
   const marcarComoLembrado = async (agendamentoId) => {
     try {
-      await axios.put(`/api/agendamentos/${agendamentoId}/lembrado`);
-      setMessage('Paciente marcado como lembrado!');
-      fetchAgendamentos();
-      setTimeout(() => setMessage(''), 3000);
+      const response = await makeRequest(`/agendamentos/${agendamentoId}/lembrado`, {
+        method: 'PUT'
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage('Paciente marcado como lembrado!');
+        fetchAgendamentos();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erro ao marcar como lembrado: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao marcar como lembrado:', error);
       setMessage('Erro ao marcar como lembrado');

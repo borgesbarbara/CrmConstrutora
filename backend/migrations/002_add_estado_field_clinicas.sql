@@ -8,12 +8,17 @@ BEGIN;
 ALTER TABLE clinicas 
 ADD COLUMN IF NOT EXISTS estado VARCHAR(2);
 
--- Documentar a mudança
 COMMENT ON COLUMN clinicas.estado IS 'Estado brasileiro (sigla de 2 letras: SP, RJ, MG, etc.)';
 
 -- Registrar migração executada
 INSERT INTO schema_migrations (version, name, executed_at) 
 VALUES ('002', 'add_estado_field_clinicas', NOW())
 ON CONFLICT (version) DO NOTHING;
-
+s
 COMMIT; 
+
+
+-- alter table clincias add colum if not exxist estado var(#    
+comment on column clinicas.estado is 'Estado brasileiro (sigla de 2 letras: SP, RJ, MG, etc.)'; 
+
+                     

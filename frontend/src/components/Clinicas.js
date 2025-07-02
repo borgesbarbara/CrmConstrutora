@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const Clinicas = () => {
+  const { makeRequest } = useAuth();
   const [clinicas, setClinicas] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingClinica, setEditingClinica] = useState(null);
@@ -89,11 +90,19 @@ const Clinicas = () => {
 
   const fetchClinicas = async () => {
     try {
-      const response = await axios.get('/api/clinicas');
-      setClinicas(response.data);
-      setLoading(false);
+      const response = await makeRequest('/clinicas');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setClinicas(data);
+      } else {
+        console.error('Erro ao carregar clínicas:', data.error);
+        setMessage('Erro ao carregar clínicas: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar clínicas:', error);
+      setMessage('Erro ao conectar com o servidor');
+    } finally {
       setLoading(false);
     }
   };
@@ -101,29 +110,40 @@ const Clinicas = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let response;
       if (editingClinica) {
-        await axios.put(`/api/clinicas/${editingClinica.id}`, formData);
-        setMessage('Clínica atualizada com sucesso!');
+        response = await makeRequest(`/clinicas/${editingClinica.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
       } else {
-        await axios.post('/api/clinicas', formData);
-        setMessage('Clínica cadastrada com sucesso!');
+        response = await makeRequest('/clinicas', {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
       }
+
+      const data = await response.json();
       
-      setShowModal(false);
-      setEditingClinica(null);
-      setFormData({
-        nome: '',
-        endereco: '',
-        bairro: '',
-        cidade: '',
-        estado: '',
-        nicho: '',
-        telefone: '',
-        email: ''
-      });
-      fetchClinicas();
-      
-      setTimeout(() => setMessage(''), 3000);
+      if (response.ok) {
+        setMessage(editingClinica ? 'Clínica atualizada com sucesso!' : 'Clínica cadastrada com sucesso!');
+        setShowModal(false);
+        setEditingClinica(null);
+        setFormData({
+          nome: '',
+          endereco: '',
+          bairro: '',
+          cidade: '',
+          estado: '',
+          nicho: '',
+          telefone: '',
+          email: ''
+        });
+        fetchClinicas();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erro ao salvar clínica: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao salvar clínica:', error);
       setMessage('Erro ao salvar clínica');

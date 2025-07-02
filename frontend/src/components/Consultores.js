@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const Consultores = () => {
+  const { makeRequest } = useAuth();
   const [consultores, setConsultores] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingConsultor, setEditingConsultor] = useState(null);
@@ -18,11 +19,19 @@ const Consultores = () => {
 
   const fetchConsultores = async () => {
     try {
-      const response = await axios.get('/api/consultores');
-      setConsultores(response.data);
-      setLoading(false);
+      const response = await makeRequest('/consultores');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setConsultores(data);
+      } else {
+        console.error('Erro ao carregar consultores:', data.error);
+        setMessage('Erro ao carregar consultores: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar consultores:', error);
+      setMessage('Erro ao conectar com o servidor');
+    } finally {
       setLoading(false);
     }
   };
@@ -30,23 +39,34 @@ const Consultores = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let response;
       if (editingConsultor) {
-        await axios.put(`/api/consultores/${editingConsultor.id}`, formData);
-        setMessage('Consultor atualizado com sucesso!');
+        response = await makeRequest(`/consultores/${editingConsultor.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
       } else {
-        await axios.post('/api/consultores', formData);
-        setMessage('Consultor cadastrado com sucesso!');
+        response = await makeRequest('/consultores', {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
       }
+
+      const data = await response.json();
       
-      setShowModal(false);
-      setEditingConsultor(null);
-      setFormData({
-        nome: '',
-        telefone: ''
-      });
-      fetchConsultores();
-      
-      setTimeout(() => setMessage(''), 3000);
+      if (response.ok) {
+        setMessage(editingConsultor ? 'Consultor atualizado com sucesso!' : 'Consultor cadastrado com sucesso!');
+        setShowModal(false);
+        setEditingConsultor(null);
+        setFormData({
+          nome: '',
+          telefone: ''
+        });
+        fetchConsultores();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erro ao salvar consultor: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao salvar consultor:', error);
       setMessage('Erro ao salvar consultor');

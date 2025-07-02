@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const Pacientes = () => {
+  const { makeRequest } = useAuth();
   const [pacientes, setPacientes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingPaciente, setEditingPaciente] = useState(null);
@@ -33,11 +34,19 @@ const Pacientes = () => {
 
   const fetchPacientes = async () => {
     try {
-      const response = await axios.get('/api/pacientes');
-      setPacientes(response.data);
-      setLoading(false);
+      const response = await makeRequest('/pacientes');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPacientes(data);
+      } else {
+        console.error('Erro ao carregar pacientes:', data.error);
+        setMessage('Erro ao carregar pacientes: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao carregar pacientes:', error);
+      setMessage('Erro ao conectar com o servidor');
+    } finally {
       setLoading(false);
     }
   };
@@ -45,27 +54,38 @@ const Pacientes = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let response;
       if (editingPaciente) {
-        await axios.put(`/api/pacientes/${editingPaciente.id}`, formData);
-        setMessage('Paciente atualizado com sucesso!');
+        response = await makeRequest(`/pacientes/${editingPaciente.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
       } else {
-        await axios.post('/api/pacientes', formData);
-        setMessage('Paciente cadastrado com sucesso!');
+        response = await makeRequest('/pacientes', {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
       }
+
+      const data = await response.json();
       
-      setShowModal(false);
-      setEditingPaciente(null);
-      setFormData({
-        nome: '',
-        telefone: '',
-        cpf: '',
-        tipo_tratamento: '',
-        status: 'lead',
-        observacoes: ''
-      });
-      fetchPacientes();
-      
-      setTimeout(() => setMessage(''), 3000);
+      if (response.ok) {
+        setMessage(editingPaciente ? 'Paciente atualizado com sucesso!' : 'Paciente cadastrado com sucesso!');
+        setShowModal(false);
+        setEditingPaciente(null);
+        setFormData({
+          nome: '',
+          telefone: '',
+          cpf: '',
+          tipo_tratamento: '',
+          status: 'lead',
+          observacoes: ''
+        });
+        fetchPacientes();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erro ao salvar paciente: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao salvar paciente:', error);
       setMessage('Erro ao salvar paciente');
@@ -94,10 +114,20 @@ const Pacientes = () => {
 
   const updateStatus = async (pacienteId, newStatus) => {
     try {
-      await axios.put(`/api/pacientes/${pacienteId}/status`, { status: newStatus });
-      setMessage('Status atualizado com sucesso!');
-      fetchPacientes();
-      setTimeout(() => setMessage(''), 3000);
+      const response = await makeRequest(`/pacientes/${pacienteId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage('Status atualizado com sucesso!');
+        fetchPacientes();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erro ao atualizar status: ' + data.error);
+      }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       setMessage('Erro ao atualizar status');

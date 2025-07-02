@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Fechamentos = () => {
+  const { makeRequest } = useAuth();
   const [fechamentos, setFechamentos] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   const [consultores, setConsultores] = useState([]);
@@ -26,6 +28,7 @@ const Fechamentos = () => {
     forma_pagamento: '',
     observacoes: ''
   });
+  const [contratoSelecionado, setContratoSelecionado] = useState(null);
 
   const formasPagamento = [
     'À vista',
@@ -50,11 +53,11 @@ const Fechamentos = () => {
       setErro(null);
       
       const [fechamentosRes, pacientesRes, consultoresRes, clinicasRes, agendamentosRes] = await Promise.all([
-        fetch('http://localhost:5000/api/fechamentos'),
-        fetch('http://localhost:5000/api/pacientes'),
-        fetch('http://localhost:5000/api/consultores'),
-        fetch('http://localhost:5000/api/clinicas'),
-        fetch('http://localhost:5000/api/agendamentos')
+        makeRequest('/fechamentos'),
+        makeRequest('/pacientes'),
+        makeRequest('/consultores'),
+        makeRequest('/clinicas'),
+        makeRequest('/agendamentos')
       ]);
 
       // Verificar se todas as respostas foram bem-sucedidas
@@ -179,6 +182,19 @@ const Fechamentos = () => {
   const fecharModal = () => {
     setModalAberto(false);
     setFechamentoEditando(null);
+    setContratoSelecionado(null);
+    setNovoFechamento({
+      paciente_id: '',
+      consultor_id: '',
+      clinica_id: '',
+      agendamento_id: '',
+      valor_fechado: '',
+      valor_formatado: '',
+      data_fechamento: new Date().toISOString().split('T')[0],
+      tipo_tratamento: '',
+      forma_pagamento: '',
+      observacoes: ''
+    });
   };
 
   const salvarFechamento = async () => {
@@ -194,26 +210,68 @@ const Fechamentos = () => {
         return;
       }
 
-      // Preparar dados para envio
-      const dadosEnvio = {
-        ...novoFechamento,
-        paciente_id: parseInt(novoFechamento.paciente_id),
-        consultor_id: novoFechamento.consultor_id ? parseInt(novoFechamento.consultor_id) : null,
-        clinica_id: novoFechamento.clinica_id ? parseInt(novoFechamento.clinica_id) : null,
-        agendamento_id: novoFechamento.agendamento_id ? parseInt(novoFechamento.agendamento_id) : null,
-        valor_fechado: parseFloat(novoFechamento.valor_fechado)
-      };
+      // Para novos fechamentos, validar se contrato foi selecionado
+      if (!fechamentoEditando && !contratoSelecionado) {
+        alert('Por favor, selecione o contrato em PDF!');
+        return;
+      }
 
-      console.log('Enviando dados:', dadosEnvio); // Debug
+      // Validar tipo de arquivo
+      if (contratoSelecionado && contratoSelecionado.type !== 'application/pdf') {
+        alert('Apenas arquivos PDF são permitidos para o contrato!');
+        return;
+      }
 
+      // Validar tamanho do arquivo (máximo 10MB)
+      if (contratoSelecionado && contratoSelecionado.size > 10 * 1024 * 1024) {
+        alert('O arquivo deve ter no máximo 10MB!');
+        return;
+      }
+
+      // Preparar FormData para envio com arquivo
+      const formData = new FormData();
+      
+      // Adicionar campos do fechamento
+      formData.append('paciente_id', parseInt(novoFechamento.paciente_id));
+      
+      // Só adicionar IDs se tiverem valor
+      if (novoFechamento.consultor_id && novoFechamento.consultor_id.trim() !== '') {
+        formData.append('consultor_id', parseInt(novoFechamento.consultor_id));
+      }
+      
+      if (novoFechamento.clinica_id && novoFechamento.clinica_id.trim() !== '') {
+        formData.append('clinica_id', parseInt(novoFechamento.clinica_id));
+      }
+      
+      if (novoFechamento.agendamento_id && novoFechamento.agendamento_id.trim() !== '') {
+        formData.append('agendamento_id', parseInt(novoFechamento.agendamento_id));
+      }
+      
+      formData.append('valor_fechado', parseFloat(novoFechamento.valor_fechado));
+      formData.append('data_fechamento', novoFechamento.data_fechamento);
+      formData.append('tipo_tratamento', novoFechamento.tipo_tratamento || '');
+      formData.append('forma_pagamento', novoFechamento.forma_pagamento || '');
+      formData.append('observacoes', novoFechamento.observacoes || '');
+      
+      // Adicionar arquivo se selecionado
+      if (contratoSelecionado) {
+        formData.append('contrato', contratoSelecionado);
+      }
+
+      console.log('Enviando dados com arquivo...'); // Debug
+
+      // Enviar dados - usar fetch diretamente para FormData
       const url = fechamentoEditando 
         ? `http://localhost:5000/api/fechamentos/${fechamentoEditando.id}`
         : 'http://localhost:5000/api/fechamentos';
       
+      const token = localStorage.getItem('token');
       const response = await fetch(url, {
         method: fechamentoEditando ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosEnvio)
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
       });
 
       const result = await response.json();
@@ -222,7 +280,7 @@ const Fechamentos = () => {
       if (response.ok) {
         carregarDados();
         fecharModal();
-        alert(fechamentoEditando ? 'Fechamento atualizado!' : 'Fechamento registrado!');
+        alert(fechamentoEditando ? 'Fechamento atualizado!' : `Fechamento registrado com sucesso! Contrato: ${result.contrato || 'anexado'}`);
       } else {
         alert('Erro: ' + (result.error || 'Erro desconhecido'));
       }
@@ -235,16 +293,20 @@ const Fechamentos = () => {
   const excluirFechamento = async (id) => {
     if (window.confirm('Deseja excluir este fechamento?')) {
       try {
-        const response = await fetch(`http://localhost:5000/api/fechamentos/${id}`, {
+        const response = await makeRequest(`/fechamentos/${id}`, {
           method: 'DELETE'
         });
 
         if (response.ok) {
           carregarDados();
           alert('Fechamento excluído!');
+        } else {
+          const data = await response.json();
+          alert('Erro ao excluir: ' + (data.error || 'Erro desconhecido'));
         }
       } catch (error) {
         console.error('Erro ao excluir fechamento:', error);
+        alert('Erro ao excluir: ' + error.message);
       }
     }
   };
@@ -613,6 +675,50 @@ const Fechamentos = () => {
               )}
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                {fechamento.contrato_arquivo && (
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch(`http://localhost:5000/api/fechamentos/${fechamento.id}/contrato?token=${token}`);
+                        
+                        if (!response.ok) {
+                          const errorData = await response.json();
+                          alert('Erro ao baixar contrato: ' + (errorData.error || 'Erro desconhecido'));
+                          return;
+                        }
+
+                        // Criar blob e fazer download
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fechamento.contrato_nome_original || 'contrato.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      } catch (error) {
+                        console.error('Erro ao baixar contrato:', error);
+                        alert('Erro ao baixar contrato: ' + error.message);
+                      }
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      transition: 'all 0.3s ease',
+                      background: '#059669',
+                      color: 'white'
+                    }}
+                    title={`Baixar contrato: ${fechamento.contrato_nome_original || 'contrato.pdf'}`}
+                  >
+                    📄 Contrato
+                  </button>
+                )}
                 <button 
                   onClick={() => abrirModal(fechamento)}
                   style={{
@@ -934,6 +1040,102 @@ const Fechamentos = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Campo de Upload do Contrato */}
+              <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1' }}>
+                <label style={{
+                  fontWeight: '500',
+                  marginBottom: '5px',
+                  color: '#374151',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}>
+                  📄 Contrato (PDF) {!fechamentoEditando && <span style={{ color: '#dc2626' }}>*</span>}
+                </label>
+                
+                <div style={{
+                  border: '2px dashed #d1d5db',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  background: contratoSelecionado ? '#f0fdf4' : '#fafafa',
+                  borderColor: contratoSelecionado ? '#10b981' : '#d1d5db',
+                  transition: 'all 0.3s ease',
+                  position: 'relative'
+                }}>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setContratoSelecionado(e.target.files[0])}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      opacity: 0,
+                      cursor: 'pointer'
+                    }}
+                  />
+                  
+                  {contratoSelecionado ? (
+                    <div>
+                      <div style={{ fontSize: '48px', marginBottom: '10px' }}>📄</div>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#059669',
+                        marginBottom: '5px'
+                      }}>
+                        Arquivo selecionado:
+                      </div>
+                      <div style={{
+                        fontSize: '13px',
+                        color: '#374151',
+                        wordBreak: 'break-all'
+                      }}>
+                        {contratoSelecionado.name}
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        marginTop: '5px'
+                      }}>
+                        {(contratoSelecionado.size / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: '48px', marginBottom: '10px', opacity: '0.5' }}>📄</div>
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#6b7280',
+                        marginBottom: '5px'
+                      }}>
+                        Clique aqui ou arraste para adicionar o contrato
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#9ca3af'
+                      }}>
+                        Apenas arquivos PDF • Máximo 10MB
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {fechamentoEditando && (
+                  <div style={{
+                    marginTop: '10px',
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    textAlign: 'center'
+                  }}>
+                    💡 Para edições, o contrato é opcional (manterá o arquivo atual se não for alterado)
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1' }}>

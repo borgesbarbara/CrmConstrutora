@@ -4,6 +4,30 @@ Sistema completo de CRM para gestão de leads, pacientes e agendamentos com pipe
 
 ## 🚀 Funcionalidades Implementadas
 
+### 🔐 **Sistema de Autenticação e Controle de Acesso** (NOVO)
+- **Login seguro** com JWT tokens
+- **Dois tipos de usuário**:
+  - **👑 Administrador**: Acesso total ao sistema
+  - **🩺 Consultor**: Acesso limitado apenas aos próprios dados
+- **Interface personalizada** para cada tipo de usuário
+- **Proteção de rotas** e dados sensíveis
+- **Logout com confirmação** e sessão segura
+
+#### **🔑 Diferenças de Acesso:**
+
+**👑 Administrador pode:**
+- Ver todos os pacientes, agendamentos e fechamentos
+- Gerenciar consultores e clínicas
+- Acessar dashboard completo da operação
+- Editar qualquer registro do sistema
+
+**🩺 Consultor pode:**
+- Ver apenas SEUS pacientes (vinculados via agendamentos)
+- Gerenciar apenas SEUS agendamentos
+- Registrar apenas SEUS fechamentos
+- Dashboard personalizado com apenas seus dados
+- **NÃO pode** acessar: consultores, clínicas, dados de outros consultores
+
 ### ✅ **Sistema Completo de Edição**
 - **Botões de Editar** em todas as guias (Pacientes, Consultores, Clínicas, Agendamentos)
 - **Modais de edição** com formulários pré-preenchidos
@@ -101,7 +125,21 @@ SUPABASE_KEY=your-anon-key-here
 
 ### 4️⃣ Criar tabelas no Supabase
 
-No **SQL Editor** do Supabase, execute:
+No **SQL Editor** do Supabase, execute as migrações em ordem:
+
+#### **📋 Migração 005: Sistema de Autenticação** (NOVO)
+```sql
+-- Execute o arquivo: backend/migrations/005_create_usuarios_table.sql
+-- Cria tabela de usuários e insere admin padrão
+```
+
+**⚠️ IMPORTANTE**: Execute a migração 005 antes de testar o login.
+
+**👑 Conta Administrador Padrão:**
+- **Email**: `admin@crm.com`
+- **Senha**: `admin123`
+
+#### **🗄️ Tabelas Básicas**
 
 ```sql
 -- Tabela de clínicas
@@ -206,6 +244,29 @@ npm start
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:5000
+
+### 🔐 **Fazer Login**
+
+1. **Acesse** http://localhost:3000
+2. **Tela de login** aparecerá automaticamente
+3. **Use a conta demo** clicando em "Conta Administrador" ou:
+   - **Email**: `admin@crm.com`
+   - **Senha**: `admin123`
+4. **Login realizado** → Será redirecionado para o dashboard
+
+### 👥 **Criar Usuário Consultor**
+
+Como administrador:
+1. Acesse **Consultores**
+2. Cadastre um novo consultor
+3. **No SQL Editor do Supabase**:
+   ```sql
+   INSERT INTO usuarios (nome, email, senha, tipo, consultor_id) 
+   VALUES ('Dr. João', 'joao@clinica.com', '$2b$10$8K1p/a9UOGNeMlvV7QT4..ZCdP9.VJK0Hk5QZY3oBz3Ohs/qJlm/G', 'consultor', 1);
+   ```
+   *(Substitua consultor_id pelo ID do consultor cadastrado)*
+
+**💡 Dica**: A senha padrão é `admin123` para testes. Em produção, implemente hash personalizado.
 
 ## 📋 Como Usar
 

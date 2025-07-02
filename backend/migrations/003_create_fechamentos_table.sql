@@ -34,3 +34,11 @@ VALUES ('003', 'create_fechamentos_table', NOW())
 ON CONFLICT (version) DO NOTHING;
 
 COMMIT; 
+
+
+
+
+
+
+
+
