@@ -83,16 +83,16 @@ const Login = () => {
           )}
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email ou Nome</label>
             <div className="input-wrapper">
-              <span className="input-icon">📧</span>
+              <span className="input-icon">👤</span>
               <input
-                type="email"
+                type="text"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="seu@email.com"
+                placeholder="admin@crm.com ou Nome do Consultor"
                 disabled={loading}
                 required
               />
@@ -143,16 +143,27 @@ const Login = () => {
           </button>
 
           <div className="demo-section">
-            <p className="demo-text">Ou use a conta demo:</p>
-            <button
-              type="button"
-              className="demo-button"
-              onClick={handleDemoLogin}
-              disabled={loading}
-            >
-              <span>👑</span>
-              Conta Administrador
-            </button>
+            <p className="demo-text">Ou use uma conta demo:</p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="demo-button"
+                onClick={handleDemoLogin}
+                disabled={loading}
+              >
+                <span>👑</span>
+                Admin
+              </button>
+              <button
+                type="button"
+                className="demo-button demo-consultor"
+                onClick={() => setFormData({ email: 'André', senha: '123456' })}
+                disabled={loading}
+              >
+                <span>🩺</span>
+                Consultor
+              </button>
+            </div>
           </div>
         </form>
 
@@ -435,6 +446,14 @@ const Login = () => {
         .demo-button:hover:not(:disabled) {
           transform: translateY(-1px);
           box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .demo-consultor {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .demo-consultor:hover:not(:disabled) {
+          box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
         .login-footer {

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
@@ -181,64 +181,90 @@ CREATE TABLE IF NOT EXISTS fechamentos (
 // === ROTAS DE AUTENTICAÇÃO ===
 app.post('/api/login', async (req, res) => {
   try {
-    const { email, senha } = req.body;
+    const { email, senha } = req.body; // 'email' será usado para nome do consultor também
 
     if (!email || !senha) {
-      return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+      return res.status(400).json({ error: 'Nome/Email e senha são obrigatórios' });
     }
 
-    // Buscar usuário por email
-    const { data: usuarios, error } = await supabase
-      .from('usuarios')
-      .select(`
-        *,
-        consultores(nome, telefone)
-      `)
-      .eq('email', email)
-      .eq('ativo', true)
-      .limit(1);
+    let usuario = null;
+    let tipoLogin = null;
 
-    if (error) throw error;
+    // Primeiro, tentar login como admin (por email)
+    if (email.includes('@')) {
+      const { data: usuarios, error } = await supabase
+        .from('usuarios')
+        .select(`
+          *,
+          consultores(nome, telefone)
+        `)
+        .eq('email', email)
+        .eq('ativo', true)
+        .limit(1);
 
-    if (!usuarios || usuarios.length === 0) {
+      if (error) throw error;
+
+      if (usuarios && usuarios.length > 0) {
+        usuario = usuarios[0];
+        tipoLogin = 'admin';
+      }
+    }
+
+    // Se não encontrou admin, tentar login como consultor (por nome)
+    if (!usuario) {
+      const { data: consultores, error } = await supabase
+        .from('consultores')
+        .select('*')
+        .eq('nome', email) // Usando o campo 'email' como nome do consultor
+        .limit(1);
+
+      if (error) throw error;
+
+      if (consultores && consultores.length > 0) {
+        usuario = consultores[0];
+        tipoLogin = 'consultor';
+      }
+    }
+
+    if (!usuario) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
-    const usuario = usuarios[0];
-
-    // Verificar senha - DEBUG MODE
-    console.log('Senha enviada:', senha);
-    console.log('Senha no banco:', usuario.senha);
-    
+    // Verificar senha
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
-    console.log('Senha válida?', senhaValida);
     
-    // TEMPORÁRIO: Aceitar senha admin123 diretamente para debug
+    // TEMPORÁRIO: Aceitar senha admin123 para admin
     const senhaTemporaria = senha === 'admin123' && usuario.email === 'admin@crm.com';
     
     if (!senhaValida && !senhaTemporaria) {
-      console.log('Login rejeitado para:', email);
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
-    // Atualizar último login
-    await supabase
-      .from('usuarios')
-      .update({ ultimo_login: new Date().toISOString() })
-      .eq('id', usuario.id);
+    // Atualizar último login (apenas para admin)
+    if (tipoLogin === 'admin') {
+      await supabase
+        .from('usuarios')
+        .update({ ultimo_login: new Date().toISOString() })
+        .eq('id', usuario.id);
+    }
 
     // Gerar token JWT
-    const token = jwt.sign(
-      {
-        id: usuario.id,
-        email: usuario.email,
-        nome: usuario.nome,
-        tipo: usuario.tipo,
-        consultor_id: usuario.consultor_id
-      },
-      JWT_SECRET,
-      { expiresIn: '8h' }
-    );
+    const tokenData = {
+      id: usuario.id,
+      nome: usuario.nome,
+      tipo: tipoLogin
+    };
+
+    // Adicionar dados específicos baseado no tipo
+    if (tipoLogin === 'admin') {
+      tokenData.email = usuario.email;
+      tokenData.consultor_id = usuario.consultor_id;
+    } else {
+      tokenData.consultor_id = usuario.id; // Para consultores, o ID deles é o consultor_id
+      tokenData.email = null;
+    }
+
+    const token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: '8h' });
 
     // Retornar dados do usuário (sem a senha)
     const { senha: _, ...dadosUsuario } = usuario;
@@ -248,7 +274,8 @@ app.post('/api/login', async (req, res) => {
       token,
       usuario: {
         ...dadosUsuario,
-        consultor_nome: usuario.consultores?.nome || null
+        tipo: tipoLogin,
+        consultor_nome: tipoLogin === 'admin' ? usuario.consultores?.nome || null : usuario.nome
       }
     });
 
@@ -411,11 +438,20 @@ app.get('/api/consultores', authenticateToken, async (req, res) => {
 
 app.post('/api/consultores', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { nome, telefone } = req.body;
+    const { nome, telefone, senha } = req.body;
+    
+    // Validar se senha foi fornecida
+    if (!senha || senha.trim() === '') {
+      return res.status(400).json({ error: 'Senha é obrigatória!' });
+    }
+    
+    // Hash da senha antes de salvar
+    const saltRounds = 10;
+    const senhaHash = await bcrypt.hash(senha, saltRounds);
     
     const { data, error } = await supabase
       .from('consultores')
-      .insert([{ nome, telefone }])
+      .insert([{ nome, telefone, senha: senhaHash }])
       .select();
 
     if (error) throw error;
@@ -428,11 +464,20 @@ app.post('/api/consultores', authenticateToken, requireAdmin, async (req, res) =
 app.put('/api/consultores/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, telefone } = req.body;
+    const { nome, telefone, senha } = req.body;
+    
+    // Preparar dados para atualização
+    const updateData = { nome, telefone };
+    
+    // Se uma nova senha foi fornecida, fazer hash dela
+    if (senha && senha.trim() !== '') {
+      const saltRounds = 10;
+      updateData.senha = await bcrypt.hash(senha, saltRounds);
+    }
     
     const { data, error } = await supabase
       .from('consultores')
-      .update({ nome, telefone })
+      .update(updateData)
       .eq('id', id)
       .select();
 

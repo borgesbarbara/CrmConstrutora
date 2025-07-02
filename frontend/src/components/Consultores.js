@@ -10,7 +10,8 @@ const Consultores = () => {
   const [message, setMessage] = useState('');
   const [formData, setFormData] = useState({
     nome: '',
-    telefone: ''
+    telefone: '',
+    senha: ''
   });
 
   useEffect(() => {
@@ -60,7 +61,8 @@ const Consultores = () => {
         setEditingConsultor(null);
         setFormData({
           nome: '',
-          telefone: ''
+          telefone: '',
+          senha: ''
         });
         fetchConsultores();
         setTimeout(() => setMessage(''), 3000);
@@ -77,7 +79,8 @@ const Consultores = () => {
     setEditingConsultor(consultor);
     setFormData({
       nome: consultor.nome || '',
-      telefone: consultor.telefone || ''
+      telefone: consultor.telefone || '',
+      senha: consultor.senha || ''
     });
     setShowModal(true);
   };
@@ -105,7 +108,8 @@ const Consultores = () => {
   const resetForm = () => {
     setFormData({
       nome: '',
-      telefone: ''
+      telefone: '',
+      senha: ''
     });
     setEditingConsultor(null);
     setShowModal(false);
@@ -403,6 +407,18 @@ const Consultores = () => {
                   value={formData.telefone}
                   onChange={handleInputChange}
                   placeholder="(11) 99999-9999"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Senha</label>
+                <input
+                  type="password"
+                  name="senha"
+                  className="form-input"
+                  value={formData.senha}
+                  onChange={handleInputChange}
+                  placeholder="Digite a senha do consultor"
                 />
               </div>
 
