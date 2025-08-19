@@ -21,7 +21,11 @@ const Dashboard = () => {
     valorPeriodo: 0,
     novosLeadsPeriodo: 0,
     // Estatísticas por dia da semana
-    estatisticasPorDia: {}
+    estatisticasPorDia: {},
+    // Valores de fechamento
+    totalFechamentos: 0,
+    valorTotalFechamentos: 0,
+    fechamentosPeriodo: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -168,8 +172,8 @@ const Dashboard = () => {
       });
 
       // Calcular fechamentos baseado em agendamentos com status "fechado"
-      const agendamentosFechados = agendamentos.filter(a => a.status === 'fechado');
-      const valorTotal = agendamentosFechados.length * 5000; // R$ 5.000 por fechamento
+      const agendamentosFechados = agendamentos.filter(a => a.status === 'fechado') || [];
+      const valorTotal = (agendamentosFechados.length || 0) * 5000; // R$ 5.000 por fechamento
       
       agendamentosFechados.forEach(a => {
         if (a.consultor_nome && consultoresMap[a.consultor_nome]) {
@@ -193,20 +197,20 @@ const Dashboard = () => {
       const consultoresStats = Object.values(consultoresMap);
 
       setStats({
-        totalIndicacoes: indicacoes.length,
-        totalAgendamentos: agendamentos.length,
-        totalFechamentos: agendamentosFechados.length,
-        valorTotalFechamentos: valorTotal,
-        agendamentosHoje,
-        leadsPorStatus,
-        consultoresStats,
-        comissaoTotalMes,
-        comissaoTotalGeral,
-        agendamentosPeriodo,
-        fechamentosPeriodo: fechamentosPeriodo,
-        valorPeriodo: valorTotal,
-        novosLeadsPeriodo,
-        estatisticasPorDia
+        totalIndicacoes: indicacoes.length || 0,
+        totalAgendamentos: agendamentos.length || 0,
+        totalFechamentos: agendamentosFechados.length || 0,
+        valorTotalFechamentos: valorTotal || 0,
+        agendamentosHoje: agendamentosHoje || 0,
+        leadsPorStatus: leadsPorStatus || {},
+        consultoresStats: consultoresStats || [],
+        comissaoTotalMes: comissaoTotalMes || 0,
+        comissaoTotalGeral: comissaoTotalGeral || 0,
+        agendamentosPeriodo: agendamentosPeriodo || 0,
+        fechamentosPeriodo: fechamentosPeriodo || 0,
+        valorPeriodo: valorTotal || 0,
+        novosLeadsPeriodo: novosLeadsPeriodo || 0,
+        estatisticasPorDia: estatisticasPorDia || {}
       });
       setLoading(false);
     } catch (error) {
@@ -218,16 +222,23 @@ const Dashboard = () => {
 
 
   const formatCurrency = (value) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    if (value === undefined || value === null) {
+      return 'R$ 0,00';
+    }
+    return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   const formatCurrencyCompact = (value) => {
-    if (value >= 1000000) {
-      return `R$ ${(value / 1000000).toFixed(1).replace('.', ',')}M`;
-    } else if (value >= 1000) {
-      return `R$ ${(value / 1000).toFixed(0)}k`;
+    if (value === undefined || value === null) {
+      return 'R$ 0';
+    }
+    const numValue = Number(value);
+    if (numValue >= 1000000) {
+      return `R$ ${(numValue / 1000000).toFixed(1).replace('.', ',')}M`;
+    } else if (numValue >= 1000) {
+      return `R$ ${(numValue / 1000).toFixed(0)}k`;
     } else {
-      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      return numValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
   };
 

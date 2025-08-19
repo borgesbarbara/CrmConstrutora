@@ -54,10 +54,17 @@ const upload = multer({
   }
 });
 
-// Supabase client - CORRIGIDO
-const supabaseUrl = process.env.SUPABASE_URL || 'https://nzznsccvjkfzpayjylay.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56em5zY2N2amtmenBheWp5bGF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzQ3NjksImV4cCI6MjA2ODI1MDc2OX0.6W0O558PvkBp7pJ2FufwZ3rlGvh_2VxggcWhaxclfo8';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56em5zY2N2amtmenBheWp5bGF5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjY3NDc2OSwiZXhwIjoyMDY2OTUwNzY5fQ.6W0O558PvkBp7pJ2FufwZ3rlGvh_2VxggcWhaxclfo8';
+// Supabase client - Configuração segura
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+// Verificar se as variáveis de ambiente estão definidas
+if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+  console.error('❌ Erro: Variáveis do Supabase não configuradas no .env');
+  console.error('Configure SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_KEY');
+  process.exit(1);
+}
 
 // Cliente Supabase para operações normais
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -68,8 +75,14 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 // Configurar Supabase Storage
 const STORAGE_BUCKET = 'contratos';
 
-// JWT Secret - CORRIGIDO
-const JWT_SECRET = process.env.JWT_SECRET || 'DkY/hxlrCCLFG8myFFZCegAXcwQsrDa+U+t9Jn3Lba6X5ujds6qTsftGiPiGYt4NztQP8srqKT3HUYxG28ZROw==';
+// JWT Secret - Configuração segura
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Verificar se o JWT_SECRET está definido
+if (!JWT_SECRET) {
+  console.error('❌ Erro: JWT_SECRET não configurado no .env');
+  process.exit(1);
+}
 
 // Função para normalizar emails (converter para minúsculas e limpar espaços)
 const normalizarEmail = (email) => {

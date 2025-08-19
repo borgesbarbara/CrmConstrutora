@@ -10,7 +10,7 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Configuração CORS para Vercel
 const corsOptions = {
@@ -55,11 +55,18 @@ const upload = multer({
   }
 });
 
-// Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project-id.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || 'your-anon-key-here';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || supabaseKey; // Service role key para Storage
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Supabase client - Configuração segura
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+// Verificar se as variáveis de ambiente estão definidas
+if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+  console.error('❌ Erro: Variáveis do Supabase não configuradas no .env');
+  console.error('Configure SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_KEY');
+  process.exit(1);
+}
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey); // Cliente admin para Storage
 
 // Configurar Supabase Storage
@@ -97,8 +104,14 @@ const uploadToSupabase = async (file) => {
   }
 };
 
-// JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'DkY/hxlrCCLFG8myFFZCegAXcwQsrDa+U+t9Jn3Lba6X5ujds6qTsftGiPiGYt4NztQP8srqKT3HUYxG28ZROw==';
+// JWT Secret - Configuração segura
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Verificar se o JWT_SECRET está definido
+if (!JWT_SECRET) {
+  console.error('❌ Erro: JWT_SECRET não configurado no .env');
+  process.exit(1);
+}
 
 // Função para normalizar emails (converter para minúsculas e limpar espaços)
 const normalizarEmail = (email) => {
@@ -266,10 +279,7 @@ app.post('/api/login', async (req, res) => {
     if (email.includes('@')) {
       const { data: usuarios, error } = await supabase
         .from('usuarios')
-        .select(`
-          *,
-          consultores(nome, telefone)
-        `)
+        .select('*')
         .eq('email', email)
         .eq('ativo', true)
         .limit(1);
