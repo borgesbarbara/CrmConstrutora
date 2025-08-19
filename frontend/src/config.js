@@ -7,8 +7,8 @@ const config = {
       : 'http://localhost:5001/api'),
   
   // Configurações do Supabase (se necessário no frontend)
-  SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL,
-  SUPABASE_ANON_KEY: process.env.REACT_APP_SUPABASE_ANON_KEY,
+  SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL || "https://shngomyavivrqoxvypoe.supabase.co",
+  SUPABASE_ANON_KEY: process.env.REACT_APP_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobmdvbXlhdml2cnFveHZ5cG9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxOTM2NTEsImV4cCI6MjA3MDc2OTY1MX0.yo5lZOaYcp-02ZlxJJFddLvfFGsxeptKbI5HF19W1aE",
   
   // Configurações de ambiente
   NODE_ENV: process.env.NODE_ENV || 'development',
