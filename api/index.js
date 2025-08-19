@@ -18,6 +18,7 @@ const corsOptions = {
     'http://localhost:3000',
     'https://localhost:3000',
     'https://crm-construtora.vercel.app',
+    'https://crm-construtora-roan.vercel.app',
     'https://crm-construtora-*.vercel.app',
     process.env.FRONTEND_URL,
     /\.vercel\.app$/
@@ -308,7 +309,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 };
 
 // === ROTAS DE AUTENTICAÇÃO ===
-app.post('/api/login', async (req, res) => {
+app.post('/login', async (req, res) => {
   try {
     const { email, senha } = req.body; // 'email' será usado para nome do consultor também
 
@@ -426,13 +427,13 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-app.post('/api/logout', authenticateToken, (req, res) => {
+app.post('/logout', authenticateToken, (req, res) => {
   // Com JWT stateless, o logout é feito removendo o token do cliente
   res.json({ message: 'Logout realizado com sucesso' });
 });
 
 // CORRIGIDO: Endpoint verify-token para funcionar com consultores
-app.get('/api/verify-token', authenticateToken, async (req, res) => {
+app.get('/verify-token', authenticateToken, async (req, res) => {
   try {
     let usuario = null;
     
@@ -594,7 +595,7 @@ app.put('/api/clinicas/:id', authenticateToken, requireAdmin, async (req, res) =
 });
 
 // === CONSULTORES === (Apenas Admin pode gerenciar)
-app.get('/api/consultores', authenticateToken, async (req, res) => {
+app.get('/consultores', authenticateToken, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('consultores')
@@ -608,7 +609,7 @@ app.get('/api/consultores', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/consultores', authenticateToken, requireAdmin, async (req, res) => {
+app.post('/consultores', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { nome, telefone, senha, pix } = req.body;
     
@@ -641,7 +642,7 @@ app.post('/api/consultores', authenticateToken, requireAdmin, async (req, res) =
 });
 
 // === CADASTRO PÚBLICO DE CONSULTORES === (Sem autenticação)
-app.post('/api/consultores/cadastro', async (req, res) => {
+app.post('/consultores/cadastro', async (req, res) => {
   try {
     const { nome, telefone, email, senha, cpf, pix } = req.body;
     
@@ -715,7 +716,7 @@ app.post('/api/consultores/cadastro', async (req, res) => {
 });
 
 // === CADASTRO PÚBLICO DE PACIENTES/LEADS === (Sem autenticação)
-app.post('/api/leads/cadastro', async (req, res) => {
+app.post('/leads/cadastro', async (req, res) => {
   try {
     const { nome, telefone, tipo_tratamento, cpf, observacoes } = req.body;
     
@@ -825,7 +826,7 @@ app.get('/api/consultores/:id', authenticateToken, requireAdmin, async (req, res
 });
 
 // === PACIENTES === (Admin vê todos, Consultor vê apenas os seus)
-app.get('/api/pacientes', authenticateToken, async (req, res) => {
+app.get('/pacientes', authenticateToken, async (req, res) => {
   try {
     let query = supabase
       .from('pacientes')
@@ -901,7 +902,7 @@ app.post('/api/pacientes', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/pacientes/:id', authenticateToken, async (req, res) => {
+app.put('/pacientes/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { nome, telefone, cpf, tipo_tratamento, status, observacoes, consultor_id } = req.body;
@@ -930,7 +931,7 @@ app.put('/api/pacientes/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/pacientes/:id/status', authenticateToken, async (req, res) => {
+app.put('/pacientes/:id/status', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -948,7 +949,7 @@ app.put('/api/pacientes/:id/status', authenticateToken, async (req, res) => {
 });
 
 // === NOVOS LEADS === (Funcionalidade para pegar leads)
-app.get('/api/novos-leads', authenticateToken, async (req, res) => {
+app.get('/novos-leads', authenticateToken, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('pacientes')
@@ -963,7 +964,7 @@ app.get('/api/novos-leads', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/novos-leads/:id/pegar', authenticateToken, async (req, res) => {
+app.put('/novos-leads/:id/pegar', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -994,7 +995,7 @@ app.put('/api/novos-leads/:id/pegar', authenticateToken, async (req, res) => {
 });
 
 // === AGENDAMENTOS === (Admin vê todos, Consultor vê apenas os seus)
-app.get('/api/agendamentos', authenticateToken, async (req, res) => {
+app.get('/agendamentos', authenticateToken, async (req, res) => {
   try {
     let query = supabase
       .from('agendamentos')
@@ -1056,7 +1057,7 @@ app.post('/api/agendamentos', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/agendamentos/:id', authenticateToken, async (req, res) => {
+app.put('/agendamentos/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { paciente_id, consultor_id, clinica_id, data_agendamento, horario, status, observacoes } = req.body;
@@ -1083,7 +1084,7 @@ app.put('/api/agendamentos/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/agendamentos/:id/status', authenticateToken, async (req, res) => {
+app.put('/agendamentos/:id/status', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -1100,7 +1101,7 @@ app.put('/api/agendamentos/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/agendamentos/:id/lembrado', authenticateToken, async (req, res) => {
+app.put('/agendamentos/:id/lembrado', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -1117,7 +1118,7 @@ app.put('/api/agendamentos/:id/lembrado', authenticateToken, async (req, res) =>
 });
 
 // Deletar agendamento (apenas admin)
-app.delete('/api/agendamentos/:id', authenticateToken, requireAdmin, async (req, res) => {
+app.delete('/agendamentos/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -1134,7 +1135,7 @@ app.delete('/api/agendamentos/:id', authenticateToken, requireAdmin, async (req,
 });
 
 // === FECHAMENTOS === (Admin vê todos, Consultor vê apenas os seus)
-app.get('/api/fechamentos', authenticateToken, async (req, res) => {
+app.get('/fechamentos', authenticateToken, async (req, res) => {
   try {
     let query = supabase
       .from('fechamentos')
@@ -1259,7 +1260,7 @@ app.post('/api/fechamentos', authenticateUpload, upload.single('contrato'), asyn
   }
 });
 
-app.put('/api/fechamentos/:id', authenticateToken, async (req, res) => {
+app.put('/fechamentos/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { 
@@ -1297,7 +1298,7 @@ app.put('/api/fechamentos/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/fechamentos/:id', authenticateToken, async (req, res) => {
+app.delete('/fechamentos/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -1336,7 +1337,7 @@ app.delete('/api/fechamentos/:id', authenticateToken, async (req, res) => {
 });
 
 // Rota para download de contratos (aceita token via header Authorization)
-app.get('/api/fechamentos/:id/contrato', authenticateToken, async (req, res) => {
+app.get('/fechamentos/:id/contrato', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1376,7 +1377,7 @@ app.get('/api/fechamentos/:id/contrato', authenticateToken, async (req, res) => 
 });
 
 // === DASHBOARD/ESTATÍSTICAS === (Admin vê tudo, Consultor vê apenas seus dados)
-app.get('/api/dashboard', authenticateToken, async (req, res) => {
+app.get('/dashboard', authenticateToken, async (req, res) => {
   try {
     // Obter data atual no fuso horário do Brasil (UTC-3)
     const agora = new Date();
@@ -1557,7 +1558,7 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
 });
 
 // Endpoint de teste para verificar variáveis de ambiente
-app.get('/api/test-env', (req, res) => {
+app.get('/test-env', (req, res) => {
   res.json({
     SUPABASE_URL: process.env.SUPABASE_URL || 'NÃO DEFINIDA',
     SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'DEFINIDA' : 'NÃO DEFINIDA',
