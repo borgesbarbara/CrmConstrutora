@@ -47,22 +47,29 @@ export const AuthProvider = ({ children }) => {
       headers.Authorization = `Bearer ${currentToken}`;
     }
 
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers
-    });
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers
+      });
 
-    if (response.status === 401) {
-      // Token expirado ou inválido
-      logout();
-      throw new Error('Sessão expirada');
+      if (response.status === 401) {
+        // Token expirado ou inválido
+        logout();
+        throw new Error('Sessão expirada');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('❌ Erro na requisição:', error);
+      throw error;
     }
-
-    return response;
   };
 
   const login = async (email, senha) => {
     try {
+      console.log(' Tentando login com:', { email, API_BASE_URL });
+      
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
@@ -71,7 +78,32 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, senha })
       });
 
-      const data = await response.json();
+      console.log('📡 Resposta recebida:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      // Verificar se a resposta é JSON válido
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      try {
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('❌ Resposta não é JSON válido:', contentType);
+          const textResponse = await response.text();
+          console.error('📄 Conteúdo da resposta:', textResponse);
+          throw new Error('Servidor retornou resposta inválida');
+        }
+        
+        data = await response.json();
+        console.log('✅ JSON parseado com sucesso:', data);
+      } catch (jsonError) {
+        console.error('❌ Erro ao fazer parse do JSON:', jsonError);
+        const textResponse = await response.text();
+        console.error('📄 Conteúdo da resposta:', textResponse);
+        throw new Error('Erro ao processar resposta do servidor');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Erro no login');
@@ -79,17 +111,30 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, usuario } = data;
       
+      // Validar se os dados necessários estão presentes
+      if (!newToken || !usuario) {
+        console.error('❌ Dados incompletos na resposta:', { 
+          hasToken: !!newToken, 
+          hasUsuario: !!usuario,
+          data: data 
+        });
+        throw new Error('Resposta incompleta do servidor');
+      }
+      
       // Salvar token no localStorage e no state
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(usuario));
       setToken(newToken);
       setUser(usuario);
 
-      console.log('✅ Login realizado com sucesso:', { usuario: usuario.nome, token: newToken ? 'presente' : 'ausente' });
+      console.log('✅ Login realizado com sucesso:', { 
+        usuario: usuario.nome, 
+        token: newToken ? 'presente' : 'ausente' 
+      });
 
       return { success: true, user: usuario };
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ Erro no login:', error);
       return { success: false, error: error.message };
     }
   };
@@ -113,11 +158,16 @@ export const AuthProvider = ({ children }) => {
       const response = await makeRequest('/verify-token');
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('Token válido - usuário autenticado:', data.usuario.nome || data.usuario.email);
-        setUser(data.usuario);
-        setToken(currentToken);
-        localStorage.setItem('user', JSON.stringify(data.usuario));
+        try {
+          const data = await response.json();
+          console.log('Token válido - usuário autenticado:', data.usuario.nome || data.usuario.email);
+          setUser(data.usuario);
+          setToken(currentToken);
+          localStorage.setItem('user', JSON.stringify(data.usuario));
+        } catch (jsonError) {
+          console.error('❌ Erro ao fazer parse do JSON no verify-token:', jsonError);
+          clearAllData();
+        }
       } else {
         console.log('Token inválido - fazendo logout');
         clearAllData();
