@@ -80,4 +80,3 @@ app.use('*', (req, res) => {
 });
 
 // Exportar apenas o app (sem app.listen)
-module.exports = app; # Arquivo app.js atualizado
