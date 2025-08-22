@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
         }
         
         data = await response.json();
-        console.log('✅ JSON parseado com sucesso:', data);
+        console.log('✅ JSON parseado com sucesso:', data);hjkjjjjj
       } catch (jsonError) {
         console.error('❌ Erro ao fazer parse do JSON:', jsonError);
         const textResponse = await response.text();
