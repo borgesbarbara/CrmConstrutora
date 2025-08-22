@@ -1,0 +1,13 @@
+{
+  "name": "crm-system",
+  "version": "1.0.0",
+  "description": "CRM System with Frontend and Backend",
+  "scripts": {
+    "build": "cd frontend && npm install --force && chmod +x node_modules/.bin/react-scripts && CI=false DISABLE_ESLINT_PLUGIN=true npm run build",
+    "install": "cd frontend && npm install --force && cd ../backend && npm install",
+    "start": "cd backend && node server.js"
+  },
+  "engines": {
+    "node": ">=14.x"
+  }
+} 

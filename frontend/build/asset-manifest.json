@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/static/css/main.d3bbe418.css",
+    "main.js": "/static/js/main.e6f9fd07.js",
+    "static/media/logohorinzontalazul.png": "/static/media/logohorinzontalazul.1eb2e0888f02085bded8.png",
+    "static/media/logobrasaoazul.png": "/static/media/logobrasaoazul.fcf3949253d42d173d2b.png",
+    "static/media/logobrasao.png": "/static/media/logobrasao.7dcc3608ed9fc1ad4008.png",
+    "static/media/logohorizontal.png": "/static/media/logohorizontal.028458bafb106bfbaa3b.png",
+    "index.html": "/index.html",
+    "main.d3bbe418.css.map": "/static/css/main.d3bbe418.css.map",
+    "main.e6f9fd07.js.map": "/static/js/main.e6f9fd07.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d3bbe418.css",
+    "static/js/main.e6f9fd07.js"
+  ]
+}
