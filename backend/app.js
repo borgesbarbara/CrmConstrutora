@@ -17,6 +17,12 @@ app.use(cors({
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
+console.log('🔧 Configuração Supabase:', { 
+  hasUrl: !!supabaseUrl, 
+  hasKey: !!supabaseServiceKey,
+  env: process.env.NODE_ENV 
+});
+
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Erro: Variáveis do Supabase não configuradas no .env');
   process.exit(1);
@@ -31,35 +37,41 @@ app.get('/api/health', (req, res) => {
 
 // Rota de login
 app.post('/api/login', async (req, res) => {
+  console.log('🔐 Login iniciado:', { email: req.body.email, timestamp: new Date().toISOString() });
+  
   try {
     // Permitir payload com "senha" ou "password"
     const { email, password, senha } = req.body;
     const finalPassword = password || senha;
 
     if (!email || !finalPassword) {
+      console.log('❌ Dados inválidos:', { hasEmail: !!email, hasPassword: !!finalPassword });
       return res.status(400).json({
         error: 'Email e senha são obrigatórios'
       });
     }
 
+    console.log('📡 Chamando Supabase auth...');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password: finalPassword
     });
 
     if (error) {
+      console.log('❌ Erro Supabase:', error.message);
       return res.status(401).json({
         error: error.message
       });
     }
 
+    console.log('✅ Login bem-sucedido:', { userId: data.user?.id, timestamp: new Date().toISOString() });
     res.json({
       user: data.user,
       session: data.session
     });
 
   } catch (error) {
-    console.error('Erro no login:', error);
+    console.error('💥 Erro no login:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
