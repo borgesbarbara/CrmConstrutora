@@ -37,10 +37,16 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, timestamp: new Date().toISOString() });
+  res.json({ 
+    ok: true, 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV,
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_SERVICE_KEY
+  });
 });
 
-// Login otimizado
+// Login otimizado com timeout
 app.post('/api/login', async (req, res) => {
   console.log('🔐 Login iniciado:', { 
     email: req.body.email, 
@@ -58,11 +64,20 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    console.log('📡 Chamando Supabase auth...');
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // Teste simples primeiro
+    console.log('📡 Testando conexão Supabase...');
+    
+    // Timeout de 10s para a chamada Supabase
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout Supabase')), 10000);
+    });
+    
+    const authPromise = supabase.auth.signInWithPassword({
       email,
       password: finalPassword
     });
+    
+    const { data, error } = await Promise.race([authPromise, timeoutPromise]);
 
     if (error) {
       console.log('❌ Erro Supabase:', error.message);
@@ -84,7 +99,7 @@ app.post('/api/login', async (req, res) => {
   } catch (error) {
     console.error('💥 Erro no login:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor'
+      error: error.message || 'Erro interno do servidor'
     });
   }
 });
