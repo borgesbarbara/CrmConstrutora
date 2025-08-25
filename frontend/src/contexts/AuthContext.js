@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
 
       console.log('✅ Login realizado com sucesso:', { 
         usuario: usuario.nome, 
-        token: newToken ? 'presente' : 'ausente' 
+        token: accessToken ? 'presente' : 'ausente' 
       });
 
       return { success: true, user: usuario };
