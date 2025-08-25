@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
         }
         
         data = await response.json();
-        console.log('✅ JSON parseado com sucesso:', data);hjkjjjjj
+        console.log('✅ JSON parseado com sucesso:', data);
       } catch (jsonError) {
         console.error('❌ Erro ao fazer parse do JSON:', jsonError);
         const textResponse = await response.text();
@@ -109,22 +109,22 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.error || 'Erro no login');
       }
 
-      const { token: newToken, usuario } = data;
-      
-      // Validar se os dados necessários estão presentes
-      if (!newToken || !usuario) {
-        console.error('❌ Dados incompletos na resposta:', { 
-          hasToken: !!newToken, 
+      // Backend com Supabase retorna { user, session }
+      const accessToken = data?.session?.access_token;
+      const usuario = data?.user;
+
+      if (!accessToken || !usuario) {
+        console.error('❌ Dados incompletos na resposta:', {
+          hasAccessToken: !!accessToken,
           hasUsuario: !!usuario,
-          data: data 
+          data
         });
         throw new Error('Resposta incompleta do servidor');
       }
-      
-      // Salvar token no localStorage e no state
-      localStorage.setItem('token', newToken);
+
+      localStorage.setItem('token', accessToken);
       localStorage.setItem('user', JSON.stringify(usuario));
-      setToken(newToken);
+      setToken(accessToken);
       setUser(usuario);
 
       console.log('✅ Login realizado com sucesso:', { 

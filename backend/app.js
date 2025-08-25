@@ -32,9 +32,11 @@ app.get('/api/health', (req, res) => {
 // Rota de login
 app.post('/api/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Permitir payload com "senha" ou "password"
+    const { email, password, senha } = req.body;
+    const finalPassword = password || senha;
 
-    if (!email || !password) {
+    if (!email || !finalPassword) {
       return res.status(400).json({
         error: 'Email e senha são obrigatórios'
       });
@@ -42,7 +44,7 @@ app.post('/api/login', async (req, res) => {
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password: finalPassword
     });
 
     if (error) {
@@ -64,6 +66,30 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Verificar token através do Supabase
+app.get('/api/verify-token', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length)
+      : null;
+
+    if (!token) {
+      return res.status(401).json({ error: 'Token ausente' });
+    }
+
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    return res.json({ ok: true, usuario: { id: data.user.id, email: data.user.email } });
+  } catch (err) {
+    console.error('Erro no verify-token:', err);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Middleware de tratamento de erros
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -80,3 +106,4 @@ app.use('*', (req, res) => {
 });
 
 // Exportar apenas o app (sem app.listen)
+module.exports = app;
