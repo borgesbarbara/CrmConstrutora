@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import './App.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -15,7 +15,6 @@ import Imobiliarias from './components/Imobiliarias';
 import Agendamentos from './components/Agendamentos';
 
 import logoBrasao from './images/logobrasao.png';
-import logoHorizontal from './images/logohorizontal.png';
 import logoHorizontalAzul from './images/logohorinzontalazul.png';
 
 // Componente para proteger rotas

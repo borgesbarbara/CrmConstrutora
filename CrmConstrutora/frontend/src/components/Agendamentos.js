@@ -42,7 +42,7 @@ const Agendamentos = () => {
   useEffect(() => {
     fetchAgendamentos();
     fetchClientes();
-  }, []);
+  }, [fetchAgendamentos, fetchClientes]);
 
   const fetchAgendamentos = async () => {
     try {

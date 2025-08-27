@@ -1,24 +1,46 @@
 // Configuração da API
 const config = {
-  // URL base da API
-  API_BASE_URL: process.env.REACT_APP_API_URL || 
-    (process.env.NODE_ENV === 'production' 
-      ? 'https://crm-construtora-roan.vercel.app/api' 
-      : 'http://localhost:5001/api'),
+  api: {
+    baseUrl: process.env.REACT_APP_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://crm-construtora-roan.vercel.app/api' 
+        : 'http://localhost:5001/api'),
+    version: 'v1',
+    timeout: 30000
+  },
   
-  // Configurações do Supabase (se necessário no frontend)
-  SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL,
-  SUPABASE_ANON_KEY: process.env.REACT_APP_SUPABASE_ANON_KEY,
+  supabase: {
+    url: process.env.REACT_APP_SUPABASE_URL,
+    anonKey: process.env.REACT_APP_SUPABASE_ANON_KEY
+  },
   
-  // Configurações de ambiente
-  NODE_ENV: process.env.NODE_ENV || 'development',
+  app: {
+    name: 'CRM Construtora',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  },
   
-  // Configurações de upload
-  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_FILE_TYPES: ['application/pdf'],
+  auth: {
+    tokenExpiry: 8 * 60 * 60 * 1000,
+    refreshThreshold: 5 * 60 * 1000
+  },
   
-  // Configurações de autenticação
-  TOKEN_EXPIRY: 8 * 60 * 60 * 1000, // 8 horas em millisegundos
+  upload: {
+    maxFileSize: 10 * 1024 * 1024,
+    allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    maxFiles: 5
+  },
+  
+  pagination: {
+    defaultPageSize: 20,
+    maxPageSize: 100
+  },
+  
+  features: {
+    enableNotifications: true,
+    enableAnalytics: process.env.NODE_ENV === 'production',
+    enableDebug: process.env.NODE_ENV === 'development'
+  }
 };
 
 export default config; 

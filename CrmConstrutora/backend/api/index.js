@@ -1,4 +1,4 @@
-// Este arquivo é necessário para o Vercel reconhecer as funções serverless
-const app = require('../server.js');
+const serverless = require('serverless-http');
+const app = require('../app');
 
-module.exports = app; 
+module.exports = serverless(app); 

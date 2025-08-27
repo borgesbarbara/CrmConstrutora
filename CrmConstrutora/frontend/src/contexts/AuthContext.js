@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import config from '../config';
 
 const AuthContext = createContext();
 
@@ -15,18 +16,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(() => {
     const savedToken = localStorage.getItem('token');
-    // Verificar se o token é válido (não vazio e não 'null' string)
     return savedToken && savedToken !== 'null' && savedToken.trim() !== '' ? savedToken : null;
   });
 
-  // Configurar URL base da API
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 
-    (process.env.NODE_ENV === 'production' 
-      ? 'https://crm-construtora-roan.vercel.app/api' 
-      : 'http://localhost:5001/api');
+  const API_BASE_URL = config.api.baseUrl;
 
   const clearAllData = () => {
-    console.log('Limpando todos os dados de autenticação');
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
@@ -41,7 +36,6 @@ export const AuthProvider = ({ children }) => {
       ...(options.headers || {})
     };
 
-    // Sempre buscar o token atual do localStorage
     const currentToken = localStorage.getItem('token');
     if (currentToken && currentToken !== 'null' && currentToken.trim() !== '') {
       headers.Authorization = `Bearer ${currentToken}`;
@@ -54,22 +48,18 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (response.status === 401) {
-        // Token expirado ou inválido
         logout();
         throw new Error('Sessão expirada');
       }
 
       return response;
     } catch (error) {
-      console.error('❌ Erro na requisição:', error);
       throw error;
     }
   };
 
   const login = async (email, senha) => {
     try {
-      console.log(' Tentando login com:', { email, API_BASE_URL });
-      
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
@@ -78,30 +68,18 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, senha })
       });
 
-      console.log('📡 Resposta recebida:', { 
-        status: response.status, 
-        statusText: response.statusText,
-        ok: response.ok
-      });
-
-      // Verificar se a resposta é JSON válido
       const contentType = response.headers.get('content-type');
       let data;
       
       try {
         if (!contentType || !contentType.includes('application/json')) {
-          console.error('❌ Resposta não é JSON válido:', contentType);
           const textResponse = await response.text();
-          console.error('📄 Conteúdo da resposta:', textResponse);
           throw new Error('Servidor retornou resposta inválida');
         }
         
         data = await response.json();
-        console.log('✅ JSON parseado com sucesso:', data);hjkjjjjj
       } catch (jsonError) {
-        console.error('❌ Erro ao fazer parse do JSON:', jsonError);
         const textResponse = await response.text();
-        console.error('📄 Conteúdo da resposta:', textResponse);
         throw new Error('Erro ao processar resposta do servidor');
       }
 
@@ -111,30 +89,17 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, usuario } = data;
       
-      // Validar se os dados necessários estão presentes
       if (!newToken || !usuario) {
-        console.error('❌ Dados incompletos na resposta:', { 
-          hasToken: !!newToken, 
-          hasUsuario: !!usuario,
-          data: data 
-        });
         throw new Error('Resposta incompleta do servidor');
       }
       
-      // Salvar token no localStorage e no state
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(usuario));
       setToken(newToken);
       setUser(usuario);
 
-      console.log('✅ Login realizado com sucesso:', { 
-        usuario: usuario.nome, 
-        token: newToken ? 'presente' : 'ausente' 
-      });
-
       return { success: true, user: usuario };
     } catch (error) {
-      console.error('❌ Erro no login:', error);
       return { success: false, error: error.message };
     }
   };
