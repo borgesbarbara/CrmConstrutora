@@ -43,16 +43,10 @@ const Agendamentos = () => {
     try {
       const response = await makeRequest('/agendamentos');
       const data = await response.json();
-      
-      if (response.ok) {
-        setAgendamentos(data);
-      } else {
-        console.error('Erro ao carregar visitas:', data.error);
-        setMessage('Erro ao carregar visitas: ' + data.error);
-      }
+      setAgendamentos(data);
     } catch (error) {
       console.error('Erro ao carregar visitas:', error);
-      setMessage('Erro ao conectar com o servidor');
+      setMessage('Erro ao conectar com o servidor: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -62,12 +56,7 @@ const Agendamentos = () => {
     try {
       const response = await makeRequest('/clientes');
       const data = await response.json();
-      
-      if (response.ok) {
-        setClientes(data);
-      } else {
-        console.error('Erro ao carregar clientes:', data.error);
-      }
+      setClientes(data);
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
     }
@@ -98,25 +87,21 @@ const Agendamentos = () => {
 
       const data = await response.json();
       
-      if (response.ok) {
-        setMessage(editingAgendamento ? 'Visita atualizada com sucesso!' : 'Visita criada com sucesso!');
-        setShowModal(false);
-        setEditingAgendamento(null);
-        setFormData({
-          cliente_id: '',
-          data_agendamento: '',
-          horario: '',
-          status: 'agendado',
-          observacoes: ''
-        });
-        fetchAgendamentos();
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setMessage('Erro ao salvar visita: ' + data.error);
-      }
+      setMessage(editingAgendamento ? 'Visita atualizada com sucesso!' : 'Visita criada com sucesso!');
+      setShowModal(false);
+      setEditingAgendamento(null);
+      setFormData({
+        cliente_id: '',
+        data_agendamento: '',
+        horario: '',
+        status: 'agendado',
+        observacoes: ''
+      });
+      fetchAgendamentos();
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Erro ao salvar visita:', error);
-      setMessage('Erro ao salvar visita');
+      setMessage('Erro ao salvar visita: ' + error.message);
     }
   };
 
@@ -148,16 +133,12 @@ const Agendamentos = () => {
 
       const data = await response.json();
       
-      if (response.ok) {
-        setMessage('Status da visita e indicação atualizados com sucesso!');
-        fetchAgendamentos();
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setMessage('Erro ao atualizar status: ' + data.error);
-      }
+      setMessage('Status da visita e indicação atualizados com sucesso!');
+      fetchAgendamentos();
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      setMessage('Erro ao atualizar status');
+      setMessage('Erro ao atualizar status: ' + error.message);
     }
   };
 

@@ -102,7 +102,7 @@ const CapturaLead = () => {
     };
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/leads/cadastro`, {
+      const response = await fetch(`${config.api.baseUrl}/leads/cadastro`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

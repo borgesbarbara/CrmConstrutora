@@ -52,6 +52,17 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Sessão expirada');
       }
 
+      if (!response.ok) {
+        let errorMessage = 'Erro na requisição';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          errorMessage = `Erro ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
       return response;
     } catch (error) {
       throw error;
@@ -121,25 +132,30 @@ export const AuthProvider = ({ children }) => {
     console.log('Verificando token...');
     try {
       const response = await makeRequest('/auth/verify-token');
+      const data = await response.json();
       
-      if (response.ok) {
-        try {
-          const data = await response.json();
-          console.log('Token válido - usuário autenticado:', data.usuario.nome || data.usuario.email);
-          setUser(data.usuario);
-          setToken(currentToken);
-          localStorage.setItem('user', JSON.stringify(data.usuario));
-        } catch (jsonError) {
-          console.error('❌ Erro ao fazer parse do JSON no verify-token:', jsonError);
-          clearAllData();
-        }
-      } else {
-        console.log('Token inválido - fazendo logout');
-        clearAllData();
-      }
+      console.log('Token válido - usuário autenticado:', data.usuario.nome || data.usuario.email);
+      setUser(data.usuario);
+      setToken(currentToken);
+      localStorage.setItem('user', JSON.stringify(data.usuario));
+      
     } catch (error) {
       console.error('Erro ao verificar token:', error);
-      clearAllData();
+      if (error.message.includes('Failed to fetch') || error.message.includes('404')) {
+        console.log('⚠️ API não disponível - mantendo dados locais temporariamente');
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            const userData = JSON.parse(savedUser);
+            setUser(userData);
+            setToken(currentToken);
+          } catch (parseError) {
+            clearAllData();
+          }
+        }
+      } else {
+        clearAllData();
+      }
     } finally {
       setLoading(false);
     }
