@@ -9,7 +9,6 @@ class MetaAdsAPI {
     this.baseURL = `https://graph.facebook.com/${this.apiVersion}`;
   }
 
-  // Verificar se as credenciais estão configuradas
   isConfigured() {
     return this.accessToken && this.adAccountId;
   }
