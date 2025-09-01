@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, senha) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
 
     console.log('Verificando token...');
     try {
-      const response = await makeRequest('/verify-token');
+      const response = await makeRequest('/auth/verify-token');
       
       if (response.ok) {
         try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Agendamentos = () => {
@@ -39,12 +39,7 @@ const Agendamentos = () => {
     { value: 'nao_quer_reagendar', label: 'Não quer reagendar', color: '#9ca3af' }
   ];
 
-  useEffect(() => {
-    fetchAgendamentos();
-    fetchClientes();
-  }, [fetchAgendamentos, fetchClientes]);
-
-  const fetchAgendamentos = async () => {
+  const fetchAgendamentos = useCallback(async () => {
     try {
       const response = await makeRequest('/agendamentos');
       const data = await response.json();
@@ -61,9 +56,9 @@ const Agendamentos = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [makeRequest]);
 
-  const fetchClientes = async () => {
+  const fetchClientes = useCallback(async () => {
     try {
       const response = await makeRequest('/clientes');
       const data = await response.json();
@@ -76,7 +71,12 @@ const Agendamentos = () => {
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
     }
-  };
+  }, [makeRequest]);
+
+  useEffect(() => {
+    fetchAgendamentos();
+    fetchClientes();
+  }, [fetchAgendamentos, fetchClientes]);
 
 
 
