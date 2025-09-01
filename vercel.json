@@ -3,7 +3,7 @@
   "outputDirectory": "frontend/build",
   "framework": null,
   "functions": {
-    "backend/api/index.js": {
+    "api/index.js": {
       "maxDuration": 30,
       "memory": 1024
     }
@@ -11,7 +11,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backend/api/index.js"
+      "destination": "/api/index.js"
     }
   ],
   "regions": ["gru1"]
