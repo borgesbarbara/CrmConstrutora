@@ -13,7 +13,6 @@ app.use(cors(config.cors));
 
 app.use((req, res, next) => {
   console.log(`📡 ${req.method} ${req.path} - Body:`, req.body);
-  console.log(`📡 Headers:`, req.headers);
   next();
 });
 

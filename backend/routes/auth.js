@@ -5,11 +5,6 @@ const config = require('../config');
 
 const supabase = createClient(config.supabase.url, config.supabase.anonKey);
 
-router.get('/test', (req, res) => {
-  console.log('🧪 Test endpoint called');
-  res.json({ message: 'Auth endpoint working', timestamp: new Date().toISOString() });
-});
-
 router.post('/login', async (req, res) => {
   try {
     console.log('📥 Dados recebidos no login:', req.body);
