@@ -28,6 +28,49 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
+  const safeFetch = async (url, options = {}) => {
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    };
+
+    const currentToken = localStorage.getItem('token');
+    if (currentToken && currentToken !== 'null' && currentToken.trim() !== '') {
+      headers.Authorization = `Bearer ${currentToken}`;
+    }
+
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers
+      });
+
+      const responseClone = response.clone();
+      
+      if (response.status === 401) {
+        logout();
+        throw new Error('Sessão expirada');
+      }
+
+      if (!response.ok) {
+        let errorMessage = 'Erro na requisição';
+        try {
+          const errorData = await responseClone.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          errorMessage = `Erro ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const makeRequest = async (url, options = {}) => {
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
     
@@ -71,32 +114,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, senha) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await safeFetch('/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ email, senha })
       });
 
-      const contentType = response.headers.get('content-type');
-      let data;
-      
-      try {
-        if (!contentType || !contentType.includes('application/json')) {
-          const textResponse = await response.text();
-          throw new Error('Servidor retornou resposta inválida');
-        }
-        
-        data = await response.json();
-      } catch (jsonError) {
-        const textResponse = await response.text();
-        throw new Error('Erro ao processar resposta do servidor');
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro no login');
-      }
+      const data = await response.json();
 
       const { token: newToken, usuario } = data;
       
@@ -131,7 +154,7 @@ export const AuthProvider = ({ children }) => {
 
     console.log('Verificando token...');
     try {
-      const response = await makeRequest('/auth/verify-token');
+      const response = await safeFetch('/auth/verify-token');
       const data = await response.json();
       
       console.log('Token válido - usuário autenticado:', data.usuario.nome || data.usuario.email);
@@ -164,7 +187,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     console.log('🔄 Iniciando verificação de autenticação...');
     
-    // Verificar se há dados corrompidos e limpar se necessário
     try {
       const savedUser = localStorage.getItem('user');
       const savedToken = localStorage.getItem('token');
@@ -175,7 +197,6 @@ export const AuthProvider = ({ children }) => {
         tokenState: !!token 
       });
 
-      // Se há dados inconsistentes, limpar tudo
       if ((savedUser && !savedToken) || (!savedUser && savedToken)) {
         console.log('⚠️ Dados inconsistentes no localStorage - limpando');
         clearAllData();
@@ -183,7 +204,6 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      // Se há usuário salvo mas token é inválido
       if (savedUser && savedToken && (!token || token.trim() === '' || token === 'null')) {
         console.log('⚠️ Token inválido mas usuário salvo - limpando');
         clearAllData();
@@ -191,7 +211,6 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      // Tentar fazer parse do usuário se existir
       if (savedUser) {
         JSON.parse(savedUser);
       }
@@ -203,7 +222,6 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Se chegou até aqui, verificar token
     verifyToken();
   }, []);
 
@@ -219,7 +237,6 @@ export const AuthProvider = ({ children }) => {
     isConsultor: user?.tipo === 'consultor'
   };
 
-  // Log do estado atual para debug
   console.log('🔍 AuthContext State:', {
     hasUser: !!user,
     hasToken: !!token,
