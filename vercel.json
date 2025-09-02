@@ -1,18 +1,27 @@
 {
-  "buildCommand": "cd frontend && npm install --force && CI=false DISABLE_ESLINT_PLUGIN=true npm run build-vercel",
+  "buildCommand": "cd frontend && npm install --force && CI=false DISABLE_ESLINT_PLUGIN=true npm run build",
   "outputDirectory": "frontend/build",
   "framework": null,
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
       "memory": 1024
+    },
+    "api/test.js": {
+      "maxDuration": 10,
+      "memory": 512
     }
   },
   "rewrites": [
+    {
+      "source": "/api/test",
+      "destination": "/api/test.js"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
     }
   ],
-  "regions": ["gru1"]
+  "regions": ["gru1"],
+  "installCommand": "cd backend && npm install && cd ../frontend && npm install"
 } 
