@@ -13,7 +13,6 @@ class MetaAdsAPI {
     return this.accessToken && this.adAccountId;
   }
 
-  // Fazer requisição para a API do Meta
   async makeRequest(endpoint, params = {}) {
     try {
       // Verificar se o token está configurado
