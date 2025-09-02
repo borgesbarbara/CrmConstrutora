@@ -13,7 +13,6 @@ module.exports = async (req, res) => {
   console.log('🚀 API Handler - Method:', req.method, 'Path:', req.path);
   console.log('🚀 API Handler - Headers:', req.headers);
   
-  // Endpoint de debug
   if (req.path === '/debug') {
     return res.json({
       message: 'API Debug Info',
