@@ -15,7 +15,6 @@ class MetaAdsAPI {
 
   async makeRequest(endpoint, params = {}) {
     try {
-      // Verificar se o token está configurado
       if (!this.accessToken || this.accessToken === 'seu_token_de_acesso_aqui') {
         throw new Error('Token de acesso do Meta não configurado. Configure META_ACCESS_TOKEN no arquivo .env');
       }
