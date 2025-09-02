@@ -4,7 +4,7 @@
   "description": "CRM Construtora - Frontend e Backend",
   "main": "api/index.js",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
+    "build": "echo 'Build handled by Vercel'",
     "start": "cd backend && npm start",
     "dev": "cd backend && npm run dev"
   },

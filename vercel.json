@@ -1,7 +1,6 @@
 {
-  "buildCommand": "npm run build",
   "outputDirectory": "frontend/build",
-  "framework": null,
+  "framework": "create-react-app",
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
