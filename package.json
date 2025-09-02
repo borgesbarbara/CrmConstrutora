@@ -1,0 +1,14 @@
+{
+  "name": "crm-construtora",
+  "version": "1.0.0",
+  "description": "CRM Construtora - Frontend e Backend",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend"
+  },
+  "dependencies": {
+    "serverless-http": "^3.2.0"
+  }
+}
